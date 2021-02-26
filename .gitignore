@@ -1,0 +1,9 @@
+# Specify filepatterns you want git to ignore.
+
+__pycache__/
+dist
+build/
+*.lnk
+*.spec
+Gavin
+2/
