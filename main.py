@@ -101,7 +101,7 @@ def send(media_lnk, message="Here is an image!"):
         payload_data["content"] = random.choice(config["quips"])
         x = requests.post(hook, json = payload_data)
         print(x)
-        time.sleep(1)
+        time.sleep(config["request_pause"])
 
 
 
@@ -132,7 +132,7 @@ def main():
             continue
 
         if complete:
-            exit(0)
+            sys.exit(0)
 
         print("didn't find anything new :(")
 

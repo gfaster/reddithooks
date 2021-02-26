@@ -8,6 +8,7 @@
 	],
 
 	"db_file": "feed_db.db",
+	"request_pause": 0.25, 
 
 	"quips": [
 		"ooh, an image",
