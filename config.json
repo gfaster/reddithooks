@@ -1,10 +1,17 @@
 {	
 	"feed": "https://www.reddit.com/r/awww/top.rss",
+	"subr": "https://www.reddit.com/r/awww/",
 
 	"webhooks": [
 		"https://discord.com/api/webhooks/814670606985461760/fEUPfF1fAuJ8MlJVsnb7nX7XQFfY1ppzciw3UjULQwRBoX_xfcqOUhSndWbDVcE5ubA0",
 		"https://discord.com/api/webhooks/814670732671582219/-SK9AxjHotqK1cZvm74Xw6qno7i5RNcbxOY03X4DFjFcV46TbFo1FmactYNVdp0bayPs"
 	],
 
-	"db_file": "previous.db"
+	"db_file": "feed_db.db",
+
+	"quips": [
+		"ooh, an image",
+		"aww that's cute",
+		"awwwwwwww"
+	]
 }
