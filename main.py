@@ -86,7 +86,7 @@ def get_image_from_entry(entry):
 	
 
 def get_id_from_entry(entry):
-    return entry["id"].split(config["subr"],1)[1]
+    return entry["id"].split(r"/")[-1]
 
 
 def send(media_lnk, message="Here is an image!"):
@@ -136,6 +136,7 @@ def main():
 
         print("didn't find anything new :(")
 
+    sys.exit(1)
 
     
 
