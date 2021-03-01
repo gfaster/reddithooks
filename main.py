@@ -30,23 +30,58 @@ def create_connection(db_file):
 
     return conn
 
+def get_waits(conn):
+    query = "SELECT * FROM waits"
+    c = conn.cursor()
+    c.execute(query)
+    rows = c.fetchall()
+    # out = tuple((x[1] for x in rows))
+    return rows
+
 def create_tables(conn):
-    query = """ CREATE TABLE IF NOT EXISTS previous (
+    query1 = """ CREATE TABLE IF NOT EXISTS previous (
                                         id integer PRIMARY KEY,
                                         reddit_id text NOT NULL,
                                         media_lnk text,
                                         date_sent text
                                     ); """
 
+    query2 = """ CREATE TABLE IF NOT EXISTS waits (
+                                        id integer PRIMARY KEY,
+                                        count integer,
+                                        initial integer
+                                    ); """
+
+
     if conn is None:
         raise ("conn is None in table creation")
 
     try:
         c = conn.cursor()
-        c.execute(query)
-        
+        c.execute(query1)
+
+        c = conn.cursor()
+        c.execute(query2)
     except:
         print("Table creation error")
+        sys.exit(1)
+
+    rows = []
+    try:
+        rows = get_waits(conn)
+    except:
+        print("wait rows get error")
+
+
+    if not len(rows) == len(config["run_wait"]):
+        c = conn.cursor()
+        c.execute("DELETE FROM waits")
+        conn.commit()
+        for i in config["run_wait"]:
+            c = conn.cursor()
+            c.execute("INSERT INTO waits(count, initial) VALUES(1, ?)", (i,))
+        conn.commit()
+    print("table init finished.")
 
     # query_count += 1
 
@@ -76,28 +111,51 @@ def add_post(conn, reddit_id, media_lnk):
 
     return cur.lastrowid
 
+def decrement_waits(conn):
+    print("decrimenting")
+    current = get_waits(conn)
+    for i in current:
+        c = conn.cursor()
+        if i[1] == 1:
+            c.execute("UPDATE waits SET count = ? WHERE id = ?", (i[2], i[0]))
+            print("resetting")
+        else:
+            c.execute("UPDATE waits SET count = ? WHERE id = ?", (i[1] - 1, i[0]))
+            print("decrimenting")
+    conn.commit()
+
+def verify_timing(conn, hook_index):
+    initial = config["run_wait"]
+    current = get_waits(conn)
+    out = current[hook_index][1] == 1
+    print (f"verified the timing on {hook_index}, {out}")
+    return out
+
 def get_image_from_entry(entry):
     content = entry['content'][0]['value']
     img = re.findall(r'href="(.*?)"', content)[2]
     if ".jpg" not in img and ".png" not in img:
+        print(f"Incorrect format: {img}")
         raise Exception(f"Incorrect format: {img}")
 
     return img
 	
-
 def get_id_from_entry(entry):
     return entry["id"].split(r"/")[-1]
 
-
-def send(media_lnk, message="Here is an image!"):
+def send(conn, media_lnk):
 
     payload_data = dict()
     
 
     
     payload_data["embeds"] = [{"image": {"url": media_lnk}}]
-
-    for hook in config["webhooks"]:
+    print("sending...")
+    for i in range(len(config["webhooks"])):
+        hook = config["webhooks"][i]
+        if not verify_timing(conn, i):
+            print(f"not yet for {i}")
+            continue
         payload_data["content"] = random.choice(config["quips"])
         x = requests.post(hook, json = payload_data)
         print(x)
@@ -108,6 +166,7 @@ def send(media_lnk, message="Here is an image!"):
 
 
 def main():
+    print("starting...")
     query_count = 0
     request_count = 0   
 
@@ -120,10 +179,15 @@ def main():
         
         try:   
             entry_id = get_id_from_entry(entry)
+
             verify_unique(conn, entry_id)
+
             media_lnk = get_image_from_entry(entry)
+            send(conn, media_lnk)
+            
             add_post(conn, entry_id, media_lnk)
-            send(media_lnk)
+            
+            decrement_waits(conn)
             
             print(f"Just sent {media_lnk}!")
             complete = True
