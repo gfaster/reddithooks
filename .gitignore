@@ -7,3 +7,4 @@ build/
 *.spec
 Gavin
 2/
+*.db
