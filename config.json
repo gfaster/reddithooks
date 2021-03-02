@@ -1,6 +1,5 @@
 {	
 	"feed": "https://www.reddit.com/r/awww/top.rss",
-	"subr": "https://www.reddit.com/r/awww/",
 
 	"webhooks": [
 		"https://discord.com/api/webhooks/814670606985461760/fEUPfF1fAuJ8MlJVsnb7nX7XQFfY1ppzciw3UjULQwRBoX_xfcqOUhSndWbDVcE5ubA0",
@@ -8,7 +7,7 @@
 	],
 
 	"run_wait": [
-		24,
+		3,
 		1
 	],
 
