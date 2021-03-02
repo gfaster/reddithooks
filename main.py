@@ -7,6 +7,7 @@ from datetime import datetime
 import sys
 import time
 import random
+import colorama
 
 with open("config.json") as config_file:
 	config = json.load(config_file)
@@ -15,7 +16,7 @@ d = feedparser.parse(config["feed"])
 hook_num = len(config["webhooks"])
 
 query_count = 0
-DEBUG = True
+DEBUG = False
 
 
 def create_connection(db_file):
@@ -28,8 +29,8 @@ def create_connection(db_file):
     try:
         conn = sqlite3.connect(db_file)
         return conn
-    except:
-        gprint("Connection creation error")
+    except Exception as e:
+        raise Exception(f"Connection creation error: {e}")
 
     return conn
 
@@ -220,6 +221,7 @@ def main():
 
     conn = create_connection(config["db_file"])
     create_tables(conn)
+    colorama.init()
 
     complete = [False] * hook_num
 
@@ -242,7 +244,7 @@ def main():
 
     decrement_waits(conn)
 
-    print(f"finished having made{gcolor.NUMBER} {query_count} {gcolor.ENDC}queries in total")
+    print(f"finished having made {gcolor.NUMBER}{query_count}{gcolor.ENDC} queries in total")
 
 
 
