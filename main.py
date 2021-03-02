@@ -207,9 +207,6 @@ class gcolor:
         global DEBUG
         if DEBUG:
             gprint("DEBUG ENABLE")
-            # gcolor.NUMBER = ''
-            # gcolor.ENDC = ''
-            # gcolor.FAIL = ''
 
 def gprint(message):
     if DEBUG:
@@ -242,7 +239,9 @@ def main():
 
         except Exception as e: print(f"{gcolor.FAIL}POST FAILURE: {e}{gcolor.ENDC}")
 
-    decrement_waits(conn)
+    try:
+        decrement_waits(conn)
+    except Exception as e: print(f"{gcolor.FAIL}Decriment failure: {e}\n\tThis will cause unsatisfactory post volumes{gcolor.ENDC}")
 
     print(f"finished having made {gcolor.NUMBER}{query_count}{gcolor.ENDC} queries in total")
 
