@@ -34,13 +34,21 @@ def create_connection(db_file):
 
     return conn
 
+wait_cache = []
 def get_waits(conn):
+    global wait_cache
     global query_count
+
+    if wait_cache:
+        return wait_cache
+
+    
     query = "SELECT * FROM waits"
     c = conn.cursor()
     c.execute(query)
     rows = c.fetchall()
     query_count += 1
+    wait_cache = rows
     # out = tuple((x[1] for x in rows))
     return rows
 
@@ -98,15 +106,28 @@ def create_tables(conn):
 
     # query_count += 1
 
+unq_cached_hook = -1
+unq_cache = []
 def verify_unique(conn, reddit_id, hook_id):
     global query_count
-    query = "SELECT * FROM previous WHERE (reddit_id=? AND hook_id=?);"
-    cur = conn.cursor()
-    cur.execute(query, (reddit_id,hook_id))
-    rows = cur.fetchall()
-    query_count += 1
+    global unq_cache
+    global unq_cached_hook
 
-    for row in rows:
+    if unq_cached_hook != hook_id or not unq_cache:
+        query = "SELECT * FROM previous WHERE hook_id=?;"
+        cur = conn.cursor()
+        cur.execute(query, (hook_id,))
+        unq_cached_hook = hook_id
+        rows = cur.fetchall()
+
+        # this should always work - I believe reddit rss has no more than 25 entries
+        unq_cache = rows[-60:]
+
+        query_count += 1
+
+
+
+    if reddit_id in [x[1] for x in unq_cache]:
         raise Exception(f"{reddit_id} is not unique for hook {hook_id}")
     else:
         return True
