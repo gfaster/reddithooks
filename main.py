@@ -12,11 +12,29 @@ import colorama
 with open("config.json") as config_file:
 	config = json.load(config_file)
 
-d = feedparser.parse(config["feed"])
+
+
 hook_num = len(config["webhooks"])
 
 query_count = 0
 DEBUG = False
+
+
+def gprint(message):
+    if DEBUG:
+        print(message)
+
+# timing different calls
+timer = 0
+def timer_start():
+    global timer
+    timer = time.time()
+def timer_end():
+    return time.time() - timer
+
+timer_start()
+d = feedparser.parse(config["feed"])
+gprint("Feed fetch took %3.2f"%(timer_end()))
 
 
 def create_connection(db_file):
@@ -54,6 +72,7 @@ def get_waits(conn):
 
 def create_tables(conn):
     global query_count
+    timer_start()
     query1 = """ CREATE TABLE IF NOT EXISTS previous (
                                         id integer PRIMARY KEY,
                                         reddit_id text NOT NULL,
@@ -102,9 +121,7 @@ def create_tables(conn):
             c.execute("INSERT INTO waits(count, initial) VALUES(1, ?)", (i,))
             query_count += 1
         conn.commit()
-    gprint("table init finished.")
-
-    # query_count += 1
+    gprint("table init finished in %3.2f" %(timer_end()))
 
 unq_cached_hook = -1
 unq_cache = []
@@ -113,21 +130,23 @@ def verify_unique(conn, reddit_id, hook_id):
     global unq_cache
     global unq_cached_hook
 
-    if unq_cached_hook != hook_id or not unq_cache:
-        query = "SELECT * FROM previous WHERE hook_id=?;"
+    if unq_cached_hook != hook_id:
+        query = "SELECT reddit_id FROM previous WHERE hook_id=? ORDER BY id DESC;"
         cur = conn.cursor()
         cur.execute(query, (hook_id,))
         unq_cached_hook = hook_id
-        rows = cur.fetchall()
 
         # this should always work - I believe reddit rss has no more than 25 entries
-        unq_cache = rows[-60:]
+        # since the order is id DESC, it grabs the most recent several
+        # if there is any duplicates, this line is the culprit
+        unq_cache = cur.fetchmany(60)
+
 
         query_count += 1
 
 
-
-    if reddit_id in [x[1] for x in unq_cache]:
+    # sqlite fetch returns tuples, so we need to search the tuples
+    if (reddit_id,) in unq_cache:
         raise Exception(f"{reddit_id} is not unique for hook {hook_id}")
     else:
         return True
@@ -151,6 +170,10 @@ def decrement_waits(conn):
     current = get_waits(conn)
     for i in current:
         c = conn.cursor()
+
+        if i[2] == 1:
+            continue
+
         if i[1] == 1:
             c.execute("UPDATE waits SET count = ? WHERE id = ?", (i[2], i[0]))
             gprint(f"resetting id {i[0] - 1}")
@@ -165,7 +188,6 @@ def verify_timing(conn, hook_index):
     initial = config["run_wait"]
     current = get_waits(conn)
     out = current[hook_index][1] == 1
-    gprint (f"verified the timing on {hook_index}, {out}")
     return out
 
 def get_entry(index):
@@ -185,7 +207,7 @@ def get_id_from_entry(entry):
     return entry["id"].split(r"/")[-1]
 
 def send(media_lnk, hook_index):
-
+    timer_start()
     payload_data = dict()
     
     hook = config["webhooks"][hook_index]
@@ -201,6 +223,7 @@ def send(media_lnk, hook_index):
     # we want to wait after sending a request
     # I'm not sure if I should leave this withing this function or move it out
     time.sleep(config["request_pause"])
+    gprint("Sent image to webhook %i in %3.2f" %(hook_index, timer_end()))
 
 def find_entry(conn, hook_id):
     for entry in d["entries"]:
@@ -224,14 +247,6 @@ class gcolor:
     ENDC = '\033[0m'
     FAIL = '\033[91m'
 
-    def init():
-        global DEBUG
-        if DEBUG:
-            gprint("DEBUG ENABLE")
-
-def gprint(message):
-    if DEBUG:
-        print(message)
 
 
 def main():
@@ -269,7 +284,7 @@ def main():
 
 
     
-gcolor.init()
+
 main()
 
 
