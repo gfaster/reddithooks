@@ -2,3 +2,4 @@ PyInstaller
 feedparser
 requests
 datetime
+databases[sqlite]
