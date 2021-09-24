@@ -3,3 +3,4 @@ feedparser
 requests
 datetime
 databases[sqlite]
+praw

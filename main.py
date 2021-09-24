@@ -8,6 +8,8 @@ import time
 import random
 from databases import Database
 import asyncio
+from requests import Session
+import praw
 
 with open("config.json") as config_file:
 	config = json.load(config_file)

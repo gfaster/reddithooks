@@ -8,3 +8,4 @@ build/
 Gavin
 2/
 *.db
+config.json
