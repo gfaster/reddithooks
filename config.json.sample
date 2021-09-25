@@ -1,5 +1,5 @@
 {	
-	"feed": "https://www.reddit.com/r/awww/top.rss",
+	"subreddit": "awww",
 
 	"webhooks": [
 		"https://discord.com/api/webhooks/814670606985461760/fEUPfF1fAuJ8MlJVsnb7nX7XQFfY1ppzciw3UjULQwRBoX_xfcqOUhSndWbDVcE5ubA0",
@@ -20,5 +20,6 @@
 		"awwwwwwww"
 	],
 
-	"client_id": ""
+	"client_id": "",
+	"client_secret": ""
 }

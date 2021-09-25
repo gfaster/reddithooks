@@ -10,6 +10,7 @@ from databases import Database
 import asyncio
 from requests import Session
 import praw
+import pprint
 
 with open("config.json") as config_file:
 	config = json.load(config_file)
@@ -21,6 +22,12 @@ hook_num = len(config["webhooks"])
 query_count = 0
 DEBUG = False
 
+reddit = praw.Reddit(
+	user_agent='windows:delivery_service:v0.2.0 (by u/gfaster) ',
+	client_id=config['client_id'],
+	client_secret=config['client_secret']
+
+	)
 
 def gprint(message):
 	if DEBUG:
@@ -43,8 +50,10 @@ timer_start()
 asyncio.run(database.connect())
 gprint("Database init took %3.2f"%(timer_end()))
 
+d = []
 timer_start()
-d = feedparser.parse(config["feed"])
+for submission in reddit.subreddit(config['subreddit']).top(limit=25):
+	d.append(submission)
 gprint("Feed fetch took %3.2f"%(timer_end()))
 
 
@@ -173,13 +182,10 @@ async def verify_timing(hook_index):
 	out = current[hook_index][1] == 1
 	return out
 
-def get_entry(index):
-	out = d["entries"][index]
-	return out
-
 def get_image_from_entry(entry):
-	content = entry['content'][0]['value']
-	img = re.findall(r'href="(.*?)"', content)[2]
+	if not hasattr(entry, 'url'):
+		raise Exception(f"Post has no url: {entry}")
+	img = entry.url
 	if ".jpg" not in img and ".png" not in img:
 		raise Exception(f"Incorrect format: {img}")
 
@@ -187,7 +193,7 @@ def get_image_from_entry(entry):
 	
 def get_id_from_entry(entry):
 	# id refers to the unique id reddit gives to each post
-	return entry["id"].split(r"/")[-1]
+	return entry.id
 
 def send(media_lnk, hook_index):
 	timer_start()
@@ -209,7 +215,7 @@ def send(media_lnk, hook_index):
 	gprint("Sent image to webhook %i in %3.2f" %(hook_index, timer_end()))
 
 async def find_entry(hook_id):
-	for entry in d["entries"]:
+	for entry in d:
 
 		# I'm not sure what I think of this here - it will be called again after this function
 		# do I want to avoid that?
